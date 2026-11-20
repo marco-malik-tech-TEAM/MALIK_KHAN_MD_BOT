@@ -1,0 +1,1 @@
+# Telegram bot token intentionally removed. Set your token via a secure environment variable; do not commit it.

@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MARCO X WAQAR MD BOT · Pair</title>
+<style>
+  :root{--bg:#0b141a;--card:#111b21;--line:#233138;--txt:#e9edef;--mut:#8696a0;--g:#25d366;--g2:#1da851;--err:#f15c6d}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;background:radial-gradient(1200px 600px at 50% -10%,#12313a,#0b141a);color:var(--txt);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;display:flex;align-items:center;justify-content:center;padding:16px}
+  .card{width:100%;max-width:440px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:26px 22px;box-shadow:0 20px 60px #0008}
+  h1{margin:0 0 4px;font-size:21px;text-align:center;letter-spacing:.3px}
+  .sub{text-align:center;color:var(--mut);font-size:14px;margin-bottom:20px}
+  label{display:block;font-size:13px;color:var(--mut);margin:14px 0 6px}
+  input{width:100%;padding:14px;border-radius:12px;border:1px solid var(--line);background:#0b141a;color:var(--txt);font-size:17px;outline:none}
+  input:focus{border-color:var(--g)}
+  button{width:100%;margin-top:18px;padding:14px;border:0;border-radius:12px;background:var(--g);color:#04210f;font-weight:700;font-size:16px;cursor:pointer}
+  button:disabled{opacity:.55;cursor:wait}
+  button.ghost{background:transparent;border:1px solid var(--line);color:var(--txt);margin-top:10px;font-weight:600}
+  .hint{font-size:12px;color:var(--mut);margin-top:6px}
+  .err{background:#3a1a20;border:1px solid #6b2a34;color:#ffb3bc;padding:10px 12px;border-radius:10px;margin-top:14px;font-size:14px}
+  .code{font:700 40px/1 ui-monospace,Menlo,Consolas,monospace;letter-spacing:6px;text-align:center;background:#0b141a;border:2px dashed var(--g);border-radius:14px;padding:22px 8px;margin:14px 0 6px;color:var(--g);user-select:all}
+  .timer{text-align:center;color:var(--mut);font-size:13px}
+  ol{padding-left:20px;color:#cfd8dc;font-size:14px;margin:14px 0 0}
+  li{margin:6px 0}
+  .ok{text-align:center}
+  .ok .big{font-size:54px}
+  .pill{display:inline-block;padding:4px 10px;border-radius:99px;background:#12301f;color:var(--g);font-size:12px;border:1px solid #1d5a35;margin-bottom:8px}
+  .hide{display:none}
+  .foot{text-align:center;color:var(--mut);font-size:12px;margin-top:18px}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>🤖 MARCO X WAQAR MD BOT</h1>
+  <div class="sub">Link your WhatsApp in 30 seconds</div>
+
+  <!-- step 1: form -->
+  <div id="form">
+    <label for="num">WhatsApp number (with country code, no +)</label>
+    <input id="num" type="tel" inputmode="numeric" autocomplete="tel" placeholder="923001234567" maxlength="20">
+    <div class="hint">Pakistan example: 92 + number without the leading 0</div>
+    <div id="pwWrap" class="hide">
+      <label for="pw">Access password</label>
+      <input id="pw" type="password" autocomplete="current-password" placeholder="••••••">
+    </div>
+    <button id="go">Get Pairing Code</button>
+    <div id="err" class="err hide"></div>
+  </div>
+
+  <!-- step 2: code -->
+  <div id="codeBox" class="hide">
+    <div class="timer">Your pairing code for <b id="forNum"></b></div>
+    <div class="code" id="code">----</div>
+    <div class="timer" id="timer"></div>
+    <button id="copy" class="ghost">Copy code</button>
+    <ol>
+      <li>Open <b>WhatsApp</b> on that phone</li>
+      <li><b>Settings → Linked Devices → Link a Device</b></li>
+      <li>Tap <b>Link with phone number instead</b></li>
+      <li>Type the code above</li>
+    </ol>
+    <button id="again" class="ghost">Request a new code</button>
+  </div>
+
+  <!-- step 3: done -->
+  <div id="done" class="ok hide">
+    <div class="big">✅</div>
+    <div class="pill" id="pill">LINKED</div>
+    <h2 style="margin:6px 0">Bot linked successfully!</h2>
+    <p class="sub" style="margin-bottom:0">The bot is starting now. Open WhatsApp and send <b>.menu</b> in any chat.<br><br>
+    A message with your <b>SESSION_ID</b> was sent to your own WhatsApp chat — save it in Railway Variables as <code>SESSION_ID</code> (keep it secret).</p>
+  </div>
+
+  <div class="foot">Marco Malik · WAQAR WRITES</div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let poll = null, tick = null, left = 0;
+
+const show = (which) => { for (const k of ['form','codeBox','done']) $(k).classList.toggle('hide', k !== which); };
+const showErr = (m) => { $('err').textContent = m || ''; $('err').classList.toggle('hide', !m); };
+const pretty = (c) => String(c || '').replace(/(.{4})(?=.)/g, '$1-');
+
+function startTimer(sec){
+  left = sec; clearInterval(tick);
+  const draw = () => { $('timer').textContent = left > 0 ? 'Enter it within ' + Math.floor(left/60) + ':' + String(left%60).padStart(2,'0') : 'Code expired - request a new one'; };
+  draw(); tick = setInterval(() => { left = Math.max(0, left - 1); draw(); }, 1000);
+}
+
+function showCode(code, number, sec){
+  $('code').textContent = pretty(code);
+  $('forNum').textContent = '+' + number;
+  show('codeBox'); startTimer(sec || 240);
+  clearInterval(poll); poll = setInterval(check, 2500);
+}
+
+async function check(){
+  try {
+    const s = await (await fetch('/api/status', {cache:'no-store'})).json();
+    $('pwWrap').classList.toggle('hide', !s.passwordRequired);
+    if (s.linked) {
+      clearInterval(poll); clearInterval(tick);
+      $('pill').textContent = s.running ? 'BOT RUNNING' : 'LINKED';
+      return show('done');
+    }
+    if (s.status === 'idle' && !$('codeBox').classList.contains('hide')) {
+      clearInterval(poll); clearInterval(tick);
+      show('form'); showErr(s.error || 'The code expired. Request a new one.');
+    }
+  } catch (_) {}
+}
+
+async function pair(){
+  showErr('');
+  const number = $('num').value.replace(/\D/g, '');
+  if (number.length < 8) return showErr('Enter your full number with the country code, e.g. 923001234567');
+  $('go').disabled = true; $('go').textContent = 'Generating code...';
+  try {
+    const r = await fetch('/api/pair', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ number, password: $('pw').value }) });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || 'Something went wrong');
+    showCode(j.code, j.number, j.secondsLeft);
+  } catch (e) { showErr(e.message); }
+  finally { $('go').disabled = false; $('go').textContent = 'Get Pairing Code'; }
+}
+
+$('go').onclick = pair;
+$('num').addEventListener('keydown', (e) => { if (e.key === 'Enter') pair(); });
+$('copy').onclick = async () => { try { await navigator.clipboard.writeText($('code').textContent.replace(/-/g,'')); $('copy').textContent = 'Copied ✓'; setTimeout(()=>$('copy').textContent='Copy code',1500); } catch(_) {} };
+$('again').onclick = () => { clearInterval(poll); clearInterval(tick); show('form'); };
+
+(async () => {
+  try {
+    const s = await (await fetch('/api/status', {cache:'no-store'})).json();
+    $('pwWrap').classList.toggle('hide', !s.passwordRequired);
+    if (s.linked) { $('pill').textContent = s.running ? 'BOT RUNNING' : 'LINKED'; show('done'); }
+    else if (s.status === 'code_ready' && s.code) showCode(s.code, s.number, s.secondsLeft);
+  } catch (_) {}
+})();
+</script>
+</body>
+</html>
